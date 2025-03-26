@@ -1,0 +1,21 @@
+.wc-cart-manager-admin-app {
+  margin: 20px;
+  max-width: 1200px;
+}
+
+.wc-cart-manager-tabs .components-tab-panel__tabs {
+  margin-bottom: 24px;
+}
+
+.wc-cart-manager-tabs .components-tab-panel__tabs-item {
+  font-size: 14px;
+  padding: 8px 16px;
+}
+
+.wc-cart-manager-tabs .active-tab {
+  border-bottom: 3px solid #007cba;
+}
+
+.wc-cart-manager-tabs .components-card__body {
+  padding: 24px;
+}

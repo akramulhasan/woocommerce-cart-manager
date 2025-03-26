@@ -1,0 +1,46 @@
+.wc-cart-manager-admin-app {
+  padding: 20px;
+  background: #fff;
+}
+
+.wc-cart-manager-admin-app h2 {
+  margin: 0;
+  font-size: 1.5em;
+  color: #1e1e1e;
+}
+
+.discount-rule-section {
+  margin-top: 20px;
+  padding: 15px;
+  background: #f9f9f9;
+  border-radius: 4px;
+}
+
+.discount-rule-section h3 {
+  margin-top: 0;
+  color: #23282d;
+}
+
+.wc-cart-manager-messages {
+  margin: 20px 0;
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: #f8f8f8;
+}
+
+.wc-cart-manager-message {
+  color: #333;
+  font-size: 14px;
+  line-height: 1.4;
+  margin-bottom: 10px;
+}
+
+.wc-cart-manager-message:last-child {
+  margin-bottom: 0;
+}
+
+.discount-applied {
+  color: #28a745;
+  font-weight: 500;
+}

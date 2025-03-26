@@ -1,0 +1,47 @@
+.discount-rule-form {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.discount-rule-form .components-base-control {
+  margin-bottom: 24px;
+}
+
+.discount-rule-form .components-text-control__input,
+.discount-rule-form .components-select-control__input {
+  width: 100%;
+  max-width: none;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-start;
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid #ddd;
+}
+
+.form-actions button {
+  min-width: 100px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 782px) {
+  .discount-rule-form {
+    max-width: 100%;
+    padding: 16px;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .form-actions button {
+    width: 100%;
+  }
+}
