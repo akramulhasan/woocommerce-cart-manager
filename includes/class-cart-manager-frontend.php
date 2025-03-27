@@ -364,6 +364,11 @@ class Cart_Manager_Frontend
         $applied_discounts = array();
 
         foreach ($rules as $rule) {
+            // Skip disabled rules
+            if (isset($rule['status']) && $rule['status'] !== 'enabled') {
+                continue;
+            }
+
             // Get trigger and discount data
             $trigger_data = $this->get_trigger_type_data($rule);
             $discount_data = $this->get_discount_data($rule);
@@ -488,6 +493,11 @@ class Cart_Manager_Frontend
         $applied_discounts = array();
 
         foreach ($rules as $rule) {
+            // Skip disabled rules
+            if (isset($rule['status']) && $rule['status'] !== 'enabled') {
+                continue;
+            }
+
             $trigger_value = floatval($rule['trigger']['value']);
             $discount_type = $rule['discount']['type'];
             $discount_value = floatval($rule['discount']['value']);
@@ -604,6 +614,40 @@ class Cart_Manager_Frontend
         }
 
         $this->is_calculating = false;
+    }
+
+    public function apply_discount_rules($cart)
+    {
+        if (is_admin() && !defined('DOING_AJAX')) {
+            return;
+        }
+
+        if (did_action('woocommerce_before_calculate_totals') >= 2) {
+            return;
+        }
+
+        $rules = get_option('wc_cart_manager_rules', array());
+        if (empty($rules)) {
+            return;
+        }
+
+        foreach ($rules as $rule) {
+            // Skip disabled rules
+            if (isset($rule['status']) && $rule['status'] !== 'enabled') {
+                continue;
+            }
+
+            if ($rule['type'] === 'cart_based') {
+                $trigger_data = $this->get_trigger_type_data($rule);
+                $applicable_data = $this->get_applicable_items($cart, $rule);
+
+                if ($trigger_data['type'] === 'cart_total') {
+                    $this->process_cart_total_rules($cart, array($rule));
+                } elseif ($trigger_data['type'] === 'item_quantity') {
+                    $this->process_item_quantity_rules($cart, array($rule));
+                }
+            }
+        }
     }
 }
 
