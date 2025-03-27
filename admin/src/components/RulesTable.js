@@ -5,6 +5,7 @@ import {
   Modal,
   TextControl,
   RadioControl,
+  FormToggle,
 } from "@wordpress/components";
 import { useState } from "@wordpress/element";
 import DiscountRuleForm from "./DiscountRuleForm";
@@ -33,11 +34,41 @@ function RulesTable({ rules, isLoading, onDeleteRule, onUpdateRule }) {
     setEditingRule(rule);
   };
 
+  const handleStatusChange = async (ruleId, enabled) => {
+    try {
+      const response = await fetch(
+        `${wcCartManagerAdmin.apiUrl}/rules/${ruleId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "X-WP-Nonce": wcCartManagerAdmin.apiNonce,
+          },
+          body: JSON.stringify({
+            status: enabled ? "enabled" : "disabled",
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update rule status");
+      }
+
+      // Call onUpdateRule with just the status update
+      await onUpdateRule({
+        id: ruleId,
+        status: enabled ? "enabled" : "disabled",
+      });
+    } catch (error) {
+      console.error("Error updating rule status:", error);
+    }
+  };
+
   const handleUpdateRule = async (updatedRule) => {
     try {
       const result = await onUpdateRule(updatedRule);
       if (result && result.error) {
-        // Don't close modal if there's an error
         return result;
       }
       if (result) {
@@ -80,6 +111,7 @@ function RulesTable({ rules, isLoading, onDeleteRule, onUpdateRule }) {
             <th>{__("Trigger Amount", "wc-cart-manager")}</th>
             <th>{__("Discount", "wc-cart-manager")}</th>
             <th>{__("Message", "wc-cart-manager")}</th>
+            <th>{__("Status", "wc-cart-manager")}</th>
             <th>{__("Actions", "wc-cart-manager")}</th>
           </tr>
         </thead>
@@ -90,6 +122,21 @@ function RulesTable({ rules, isLoading, onDeleteRule, onUpdateRule }) {
               <td>{formatAmount(rule)}</td>
               <td>{formatDiscount(rule)}</td>
               <td>{rule.message}</td>
+              <td>
+                <div className="status-toggle">
+                  <FormToggle
+                    checked={rule.status !== "disabled"}
+                    onChange={() =>
+                      handleStatusChange(rule.id, rule.status !== "enabled")
+                    }
+                  />
+                  <span className="status-label">
+                    {rule.status === "enabled"
+                      ? __("Enabled", "wc-cart-manager")
+                      : __("Disabled", "wc-cart-manager")}
+                  </span>
+                </div>
+              </td>
               <td>
                 <div className="rule-actions">
                   <Button

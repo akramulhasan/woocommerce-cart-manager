@@ -103,6 +103,17 @@ function App() {
 
   const handleUpdateRule = async (updatedRule) => {
     try {
+      // For status updates
+      if (updatedRule && updatedRule.id && updatedRule.status) {
+        await fetchRules();
+        return true;
+      }
+
+      // For full rule updates
+      if (!updatedRule || !updatedRule.id) {
+        throw new Error("Invalid rule data");
+      }
+
       const response = await fetch(
         `${wcCartManagerAdmin.apiUrl}/rules/${updatedRule.id}`,
         {
@@ -110,39 +121,18 @@ function App() {
           headers: {
             "Content-Type": "application/json",
             "X-WP-Nonce": wcCartManagerAdmin.apiNonce,
-            Accept: "application/json",
-            "X-Requested-With": "XMLHttpRequest",
           },
-          credentials: "same-origin",
           body: JSON.stringify(updatedRule),
         }
       );
 
-      const data = await response.json();
-
       if (!response.ok) {
-        console.error("Server error status:", response.status);
-        console.error("Server error details:", data);
-
-        // Handle specific error cases
-        if (response.status === 401 || response.status === 403) {
-          return {
-            error: __(
-              "You don't have permission to perform this action. Please refresh the page and try again.",
-              "wc-cart-manager"
-            ),
-          };
-        }
-
-        return {
-          error:
-            data.message ||
-            __("Error updating rule. Please try again.", "wc-cart-manager"),
-        };
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update rule");
       }
 
-      await fetchRules(); // Refresh the rules list
-      return data;
+      await fetchRules();
+      return true;
     } catch (error) {
       console.error("Error updating rule:", error);
       return {

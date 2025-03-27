@@ -240,3 +240,15 @@
     color: #1e1e1e !important;
   }
 }
+
+.status-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-label {
+  font-size: 13px;
+  line-height: 1.4;
+  color: #1e1e1e;
+}

@@ -115,28 +115,28 @@ class Cart_Manager_API
         return array(
             'name' => array(
                 'type'              => 'string',
-                'required'          => true,
+                'required'          => false,
                 'sanitize_callback' => 'sanitize_text_field',
             ),
             'type' => array(
                 'type'              => 'string',
-                'required'          => true,
+                'required'          => false,
                 'enum'              => array('cart_based'),
                 'sanitize_callback' => 'sanitize_text_field',
             ),
             'trigger' => array(
                 'type'       => 'object',
-                'required'   => true,
+                'required'   => false,
                 'properties' => array(
                     'type' => array(
                         'type'              => 'string',
-                        'required'          => true,
+                        'required'          => false,
                         'enum'              => array('cart_total', 'item_quantity'),
                         'sanitize_callback' => 'sanitize_text_field',
                     ),
                     'value' => array(
                         'type'              => 'number',
-                        'required'          => true,
+                        'required'          => false,
                         'sanitize_callback' => array($this, 'sanitize_float'),
                     ),
                     'products' => array(
@@ -157,24 +157,32 @@ class Cart_Manager_API
             ),
             'discount' => array(
                 'type'       => 'object',
-                'required'   => true,
+                'required'   => false,
                 'properties' => array(
                     'type' => array(
                         'type'              => 'string',
-                        'required'          => true,
+                        'required'          => false,
                         'enum'              => array('percentage', 'fixed'),
                         'sanitize_callback' => 'sanitize_text_field',
                     ),
                     'value' => array(
                         'type'              => 'number',
-                        'required'          => true,
+                        'required'          => false,
                         'sanitize_callback' => array($this, 'sanitize_float'),
                     ),
                 ),
             ),
             'message' => array(
                 'type'              => 'string',
+                'required'          => false,
                 'sanitize_callback' => 'wp_kses_post',
+            ),
+            'status' => array(
+                'type'              => 'string',
+                'required'          => false,
+                'enum'              => array('enabled', 'disabled'),
+                'default'           => 'enabled',
+                'sanitize_callback' => 'sanitize_text_field',
             ),
         );
     }
@@ -344,42 +352,94 @@ class Cart_Manager_API
      */
     public function update_rule($request)
     {
-        $rules = get_option('wc_cart_manager_rules', array());
-        $rule_id = (int) $request->get_param('id');
-        $updated_rule = $this->sanitize_rule($request->get_params());
+        try {
+            $rules = get_option('wc_cart_manager_rules', array());
+            $rule_id = (int) $request->get_param('id');
+            $params = $request->get_params();
 
-        // Validate the updated rule
-        $validation_result = $this->validate_rule($updated_rule, $rules, $rule_id);
-        if (is_wp_error($validation_result)) {
-            return $validation_result;
-        }
+            // Remove 'id' from params as it's not part of the rule data
+            unset($params['id']);
 
-        $rule_updated = false;
-        foreach ($rules as $key => $rule) {
-            if ($rule['id'] === $rule_id) {
-                $rules[$key] = array_merge($rule, $updated_rule);
-                $rule_updated = true;
-                break;
+            // If only status is being updated
+            if (count($params) === 1 && isset($params['status'])) {
+                $rule_updated = false;
+                $updated_rule = null;
+
+                foreach ($rules as $key => $rule) {
+                    if ($rule['id'] === $rule_id) {
+                        $rules[$key]['status'] = sanitize_text_field($params['status']);
+                        $updated_rule = $rules[$key];
+                        $rule_updated = true;
+                        break;
+                    }
+                }
+
+                if (!$rule_updated) {
+                    return new WP_Error(
+                        'rule_not_found',
+                        esc_html__('Rule not found.', 'wc-cart-manager'),
+                        array('status' => 404)
+                    );
+                }
+
+                $update_result = update_option('wc_cart_manager_rules', $rules);
+                if ($update_result === false) {
+                    return new WP_Error(
+                        'rule_not_updated',
+                        esc_html__('Failed to update rule.', 'wc-cart-manager'),
+                        array('status' => 500)
+                    );
+                }
+
+                return rest_ensure_response($updated_rule);
             }
-        }
 
-        if (!$rule_updated) {
-            return new WP_Error(
-                'rule_not_found',
-                esc_html__('Rule not found.', 'wc-cart-manager'),
-                array('status' => 404)
-            );
-        }
+            // For other updates, sanitize and validate the rule
+            $updated_rule = $this->sanitize_rule($params);
+            $validation_result = $this->validate_rule($updated_rule, $rules, $rule_id);
 
-        if (!update_option('wc_cart_manager_rules', $rules)) {
+            if (is_wp_error($validation_result)) {
+                return $validation_result;
+            }
+
+            $rule_updated = false;
+            $updated_rule = null;
+
+            foreach ($rules as $key => $rule) {
+                if ($rule['id'] === $rule_id) {
+                    $rules[$key] = array_merge($rule, $updated_rule);
+                    $updated_rule = $rules[$key];
+                    $rule_updated = true;
+                    break;
+                }
+            }
+
+            if (!$rule_updated) {
+                return new WP_Error(
+                    'rule_not_found',
+                    esc_html__('Rule not found.', 'wc-cart-manager'),
+                    array('status' => 404)
+                );
+            }
+
+            $update_result = update_option('wc_cart_manager_rules', $rules);
+            if ($update_result === false) {
+                return new WP_Error(
+                    'rule_not_updated',
+                    esc_html__('Failed to update rule.', 'wc-cart-manager'),
+                    array('status' => 500)
+                );
+            }
+
+            return rest_ensure_response($updated_rule);
+        } catch (Exception $e) {
+            error_log('Cart Manager API Error: ' . $e->getMessage());
             return new WP_Error(
-                'rule_not_updated',
-                esc_html__('Failed to update rule.', 'wc-cart-manager'),
+                'update_error',
+                esc_html__('An error occurred while updating the rule.', 'wc-cart-manager'),
                 array('status' => 500)
             );
         }
-
-        return rest_ensure_response($rules[$key]);
     }
 
     /**
@@ -533,6 +593,10 @@ class Cart_Manager_API
 
         if (isset($rule['id'])) {
             $sanitized['id'] = absint($rule['id']);
+        }
+
+        if (isset($rule['status'])) {
+            $sanitized['status'] = sanitize_text_field($rule['status']);
         }
 
         return $sanitized;
