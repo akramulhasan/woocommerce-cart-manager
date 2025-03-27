@@ -434,6 +434,11 @@ class Cart_Manager_Frontend
         }
 
         foreach ($rules as $rule) {
+            // Skip disabled rules
+            if (isset($rule['status']) && $rule['status'] !== 'enabled') {
+                continue;
+            }
+
             if (!isset($rule['type']) || $rule['type'] !== 'cart_based') {
                 continue;
             }
