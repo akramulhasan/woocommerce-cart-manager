@@ -103,8 +103,13 @@ function App() {
 
   const handleUpdateRule = async (updatedRule) => {
     try {
-      // For status updates
-      if (updatedRule && updatedRule.id && updatedRule.status) {
+      // For status updates (when only status is being changed)
+      if (
+        updatedRule &&
+        updatedRule.id &&
+        updatedRule.status &&
+        Object.keys(updatedRule).length === 2
+      ) {
         await fetchRules();
         return true;
       }
@@ -131,8 +136,9 @@ function App() {
         throw new Error(errorData.message || "Failed to update rule");
       }
 
+      const result = await response.json();
       await fetchRules();
-      return true;
+      return result;
     } catch (error) {
       console.error("Error updating rule:", error);
       return {

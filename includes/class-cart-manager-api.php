@@ -382,8 +382,7 @@ class Cart_Manager_API
                     );
                 }
 
-                $update_result = update_option('wc_cart_manager_rules', $rules);
-                if ($update_result === false) {
+                if (!update_option('wc_cart_manager_rules', $rules)) {
                     return new WP_Error(
                         'rule_not_updated',
                         esc_html__('Failed to update rule.', 'wc-cart-manager'),
@@ -394,7 +393,7 @@ class Cart_Manager_API
                 return rest_ensure_response($updated_rule);
             }
 
-            // For other updates, sanitize and validate the rule
+            // For full rule updates
             $updated_rule = $this->sanitize_rule($params);
             $validation_result = $this->validate_rule($updated_rule, $rules, $rule_id);
 
@@ -403,10 +402,9 @@ class Cart_Manager_API
             }
 
             $rule_updated = false;
-            $updated_rule = null;
-
             foreach ($rules as $key => $rule) {
                 if ($rule['id'] === $rule_id) {
+                    // Preserve the rule ID and merge the updates
                     $rules[$key] = array_merge($rule, $updated_rule);
                     $updated_rule = $rules[$key];
                     $rule_updated = true;
@@ -422,8 +420,7 @@ class Cart_Manager_API
                 );
             }
 
-            $update_result = update_option('wc_cart_manager_rules', $rules);
-            if ($update_result === false) {
+            if (!update_option('wc_cart_manager_rules', $rules)) {
                 return new WP_Error(
                     'rule_not_updated',
                     esc_html__('Failed to update rule.', 'wc-cart-manager'),
@@ -589,10 +586,6 @@ class Cart_Manager_API
 
         if (isset($rule['message'])) {
             $sanitized['message'] = wp_kses_post($rule['message']);
-        }
-
-        if (isset($rule['id'])) {
-            $sanitized['id'] = absint($rule['id']);
         }
 
         if (isset($rule['status'])) {

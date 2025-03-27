@@ -163,7 +163,7 @@ function DiscountRuleForm({
     return conflictingRule;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
@@ -187,6 +187,11 @@ function DiscountRuleForm({
       },
     };
 
+    // If editing, include the rule ID
+    if (initialData && initialData.id) {
+      submissionData.id = initialData.id;
+    }
+
     // Check for conflicting rules before submission
     const conflictingRule = checkForConflictingRules(submissionData);
     if (conflictingRule) {
@@ -208,45 +213,52 @@ function DiscountRuleForm({
       return;
     }
 
-    // If no conflicts, proceed with save
-    onSave(submissionData)
-      .then((response) => {
-        if (response.error) {
-          setError(response.error);
-          return;
+    try {
+      const response = await onSave(submissionData);
+
+      if (response && response.error) {
+        setError(response.error);
+        return;
+      }
+
+      if (response) {
+        setSuccess(
+          initialData
+            ? __("Rule updated successfully!", "wc-cart-manager")
+            : __("Rule created successfully!", "wc-cart-manager")
+        );
+
+        if (!initialData) {
+          // Reset form only for new rules
+          setFormData({
+            name: "",
+            type: "cart_based",
+            trigger: {
+              type: "cart_total",
+              value: "",
+              products: [],
+              categories: [],
+            },
+            discount: {
+              type: "percentage",
+              value: "",
+            },
+            message: "",
+          });
         }
 
-        if (response && response.id) {
-          setSuccess(__("Rule created successfully!", "wc-cart-manager"));
-          if (!initialData) {
-            setFormData({
-              name: "",
-              type: "cart_based",
-              trigger: {
-                type: "cart_total",
-                value: "",
-                products: [],
-                categories: [],
-              },
-              discount: {
-                type: "percentage",
-                value: "",
-              },
-              message: "",
-            });
-          }
-        } else {
-          setError(
-            __("Error creating rule. Please try again.", "wc-cart-manager")
-          );
+        if (onCancel) {
+          onCancel(); // Close the modal for updates
         }
-      })
-      .catch((err) => {
-        console.error("Rule creation error:", err);
-        setError(
-          __("Error creating rule. Please try again.", "wc-cart-manager")
-        );
-      });
+      }
+    } catch (err) {
+      console.error("Rule operation error:", err);
+      setError(
+        initialData
+          ? __("Error updating rule. Please try again.", "wc-cart-manager")
+          : __("Error creating rule. Please try again.", "wc-cart-manager")
+      );
+    }
   };
 
   const handleInputChange = (key, value) => {
