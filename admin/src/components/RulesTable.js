@@ -67,6 +67,30 @@ function RulesTable({ rules, isLoading, onDeleteRule, onUpdateRule }) {
 
   const handleUpdateRule = async (updatedRule) => {
     try {
+      // Check if any changes were made
+      const originalRule = rules.find((rule) => rule.id === updatedRule.id);
+      if (originalRule) {
+        const hasChanges = Object.keys(updatedRule).some((key) => {
+          if (key === "trigger" || key === "discount") {
+            return Object.keys(updatedRule[key]).some(
+              (subKey) =>
+                JSON.stringify(updatedRule[key][subKey]) !==
+                JSON.stringify(originalRule[key][subKey])
+            );
+          }
+          return (
+            JSON.stringify(updatedRule[key]) !==
+            JSON.stringify(originalRule[key])
+          );
+        });
+
+        // If no changes were made, just close the form and return null
+        if (!hasChanges) {
+          setEditingRule(null);
+          return null;
+        }
+      }
+
       const result = await onUpdateRule(updatedRule);
       if (result && result.error) {
         return result;
@@ -86,9 +110,22 @@ function RulesTable({ rules, isLoading, onDeleteRule, onUpdateRule }) {
     }
   };
 
+  const formatTriggerType = (rule) => {
+    if (rule.type === "cart_based") {
+      return rule.trigger.type === "cart_total"
+        ? __("Cart Total", "wc-cart-manager")
+        : __("Item Quantity", "wc-cart-manager");
+    }
+    return rule.trigger.type;
+  };
+
   const formatAmount = (rule) => {
     if (rule.type === "cart_based") {
-      return `$${rule.trigger.value}`;
+      if (rule.trigger.type === "cart_total") {
+        return `$${rule.trigger.value}`;
+      } else if (rule.trigger.type === "item_quantity") {
+        return rule.trigger.value;
+      }
     }
     return rule.trigger.value;
   };
@@ -108,6 +145,7 @@ function RulesTable({ rules, isLoading, onDeleteRule, onUpdateRule }) {
         <thead>
           <tr>
             <th>{__("Name", "wc-cart-manager")}</th>
+            <th>{__("Trigger Type", "wc-cart-manager")}</th>
             <th>{__("Trigger Amount", "wc-cart-manager")}</th>
             <th>{__("Discount", "wc-cart-manager")}</th>
             <th>{__("Message", "wc-cart-manager")}</th>
@@ -119,6 +157,7 @@ function RulesTable({ rules, isLoading, onDeleteRule, onUpdateRule }) {
           {rules.map((rule) => (
             <tr key={rule.id}>
               <td>{rule.name}</td>
+              <td>{formatTriggerType(rule)}</td>
               <td>{formatAmount(rule)}</td>
               <td>{formatDiscount(rule)}</td>
               <td>{rule.message}</td>

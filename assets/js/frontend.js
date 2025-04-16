@@ -48,8 +48,37 @@ jQuery(function ($) {
   // Update on quantity changes
   $(".woocommerce-cart-form").on("change", "input.qty", function () {
     var $form = $(this).closest("form");
-    $form.find("button[name='update_cart']").prop("disabled", false);
-    $form.submit();
+    var $button = $form.find("button[name='update_cart']");
+    var $row = $(this).closest("tr");
+    var cart_item_key = $row.attr("data-cart_item_key");
+    var quantity = $(this).val();
+
+    // Disable the update button
+    $button.prop("disabled", true);
+
+    // Send AJAX request to update quantity
+    $.ajax({
+      url: wc_cart_params.ajax_url,
+      type: "POST",
+      data: {
+        action: "woocommerce_update_cart",
+        cart_item_key: cart_item_key,
+        quantity: quantity,
+        security: wc_cart_params.update_cart_nonce,
+      },
+      success: function (response) {
+        if (response.success) {
+          // Update cart fragments
+          $(document.body).trigger("wc_fragment_refresh");
+          // Update cart messages
+          updateCartMessages();
+        }
+      },
+      complete: function () {
+        // Re-enable the update button
+        $button.prop("disabled", false);
+      },
+    });
   });
 
   // Update after form submission

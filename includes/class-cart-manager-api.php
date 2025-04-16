@@ -395,12 +395,52 @@ class Cart_Manager_API
 
             // For full rule updates
             $updated_rule = $this->sanitize_rule($params);
-            $validation_result = $this->validate_rule($updated_rule, $rules, $rule_id);
 
+            // Find the original rule
+            $original_rule = null;
+            foreach ($rules as $rule) {
+                if ($rule['id'] === $rule_id) {
+                    $original_rule = $rule;
+                    break;
+                }
+            }
+
+            if (!$original_rule) {
+                return new WP_Error(
+                    'rule_not_found',
+                    esc_html__('Rule not found.', 'wc-cart-manager'),
+                    array('status' => 404)
+                );
+            }
+
+            // Check if any changes were made
+            $has_changes = false;
+            foreach ($updated_rule as $key => $value) {
+                if ($key === 'trigger' || $key === 'discount') {
+                    foreach ($value as $sub_key => $sub_value) {
+                        if ($original_rule[$key][$sub_key] != $sub_value) {
+                            $has_changes = true;
+                            break 2;
+                        }
+                    }
+                } else if ($original_rule[$key] != $value) {
+                    $has_changes = true;
+                    break;
+                }
+            }
+
+            // If no changes were made, return the original rule
+            if (!$has_changes) {
+                return rest_ensure_response($original_rule);
+            }
+
+            // Validate the updated rule
+            $validation_result = $this->validate_rule($updated_rule, $rules, $rule_id);
             if (is_wp_error($validation_result)) {
                 return $validation_result;
             }
 
+            // Update the rule
             $rule_updated = false;
             foreach ($rules as $key => $rule) {
                 if ($rule['id'] === $rule_id) {

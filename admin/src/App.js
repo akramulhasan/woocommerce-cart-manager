@@ -119,6 +119,11 @@ function App() {
         throw new Error("Invalid rule data");
       }
 
+      // If no changes were made, just return success
+      if (updatedRule === null) {
+        return true;
+      }
+
       const response = await fetch(
         `${wcCartManagerAdmin.apiUrl}/rules/${updatedRule.id}`,
         {
