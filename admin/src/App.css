@@ -27,6 +27,56 @@
   font-size: 1.2em;
 }
 
+/* Tab Panel Styles */
+.wc-cart-manager-tabs .components-tab-panel__tabs {
+  margin-bottom: 24px;
+  border-bottom: 1px solid #ddd;
+}
+
+.wc-cart-manager-tabs .components-tab-panel__tabs-item {
+  font-size: 14px;
+  padding: 8px 16px;
+  border: none;
+  background: none;
+  color: #1e1e1e;
+  cursor: pointer;
+  margin-bottom: -1px;
+}
+
+.wc-cart-manager-tabs .components-tab-panel__tabs-item:hover {
+  color: #007cba;
+}
+
+.wc-cart-manager-tabs .active-tab {
+  border-bottom: 3px solid #007cba;
+  color: #007cba;
+}
+
+/* Upsell Section Styles */
+.upsell-section {
+  margin-top: 20px;
+}
+
+.upsell-pro-message {
+  text-align: center;
+  padding: 40px;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+}
+
+.upsell-pro-message h3 {
+  margin-top: 0;
+  margin-bottom: 16px;
+  color: #23282d;
+  font-size: 1.2em;
+}
+
+.upsell-pro-message p {
+  color: #666;
+  font-size: 16px;
+  margin: 0;
+}
+
 /* Modal Styles */
 .create-rule-modal {
   max-width: 800px !important;
@@ -62,6 +112,18 @@
     width: 100%;
   }
 
+  .wc-cart-manager-tabs .components-tab-panel__tabs {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .wc-cart-manager-tabs .components-tab-panel__tabs-item {
+    width: 100%;
+    text-align: left;
+    padding: 12px 16px;
+  }
+
   .create-rule-modal {
     width: 95% !important;
     margin: 10px auto !important;
@@ -69,6 +131,10 @@
 
   .create-rule-modal-overlay {
     padding: 10px 0 !important;
+  }
+
+  .upsell-pro-message {
+    padding: 24px;
   }
 }
 

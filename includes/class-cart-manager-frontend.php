@@ -263,8 +263,8 @@ class Cart_Manager_Frontend
             'type' => $rule['discount']['type'],
             'value' => floatval($rule['discount']['value']),
             'label' => $rule['discount']['type'] === 'percentage' ?
-                $rule['discount']['value'] . '%' :
-                wc_price($rule['discount']['value'])
+                $rule['discount']['value'] . '% Discount' :
+                '$' . number_format($rule['discount']['value'], 2) . ' Discount'
         );
     }
 
@@ -296,41 +296,110 @@ class Cart_Manager_Frontend
     }
 
     /**
-     * Create discount fee object
+     * Format rule message consistently
      * 
-     * @param string $label Discount label
-     * @param float $amount Discount amount
-     * @param bool $is_selected_items Whether discount applies to selected items
-     * @return object Fee object
+     * @param array $rule Rule data
+     * @param string $context Context of the message (applied, threshold, etc.)
+     * @param array $additional_data Additional data needed for formatting
+     * @return string Formatted message
      */
-    private function create_discount_fee($label, $amount, $is_selected_items = false)
+    private function format_rule_message($rule, $context = 'applied', $additional_data = array())
     {
-        $label_parts = array($label);
-        if ($is_selected_items) {
-            $label_parts[] = '(Selected Items)';
+        $message = '';
+        $discount_value = $rule['discount']['type'] === 'percentage' ?
+            $rule['discount']['value'] . '%' :
+            '$' . number_format($rule['discount']['value'], 2);
+
+        switch ($context) {
+            case 'applied':
+                $message = sprintf(
+                    __('%s has been applied!', 'wc-cart-manager'),
+                    $rule['message']
+                );
+                break;
+
+            case 'threshold':
+                $remaining = isset($additional_data['remaining']) ? $additional_data['remaining'] : 0;
+                $message = sprintf(
+                    __('Spend %s more to get <strong>%s</strong> - <em>%s discount!</em>', 'wc-cart-manager'),
+                    '$' . number_format($remaining, 2),
+                    $rule['name'],
+                    $discount_value
+                );
+                break;
+
+            case 'item_quantity_threshold':
+                $remaining = isset($additional_data['remaining']) ? $additional_data['remaining'] : 0;
+                $has_specific_items = isset($additional_data['has_specific_items']) ? $additional_data['has_specific_items'] : false;
+                $items = isset($additional_data['items']) ? $additional_data['items'] : array();
+
+                // Get product names if specific items are selected
+                $item_names = array();
+                if ($has_specific_items && !empty($items)) {
+                    foreach ($items as $item) {
+                        if (isset($item['product_id'])) {
+                            $product = wc_get_product($item['product_id']);
+                            if ($product) {
+                                $item_names[] = $product->get_name();
+                            }
+                        }
+                    }
+                    // Remove duplicates and limit to 3 items
+                    $item_names = array_unique($item_names);
+                    $item_names = array_slice($item_names, 0, 3);
+                }
+
+                if (!empty($item_names)) {
+                    $items_text = implode(', ', $item_names);
+                    if (count($item_names) > 3) {
+                        $items_text .= '...';
+                    }
+                    $message = sprintf(
+                        __('Add %d more %s to get <strong>%s</strong> - <em>%s discount!</em>', 'wc-cart-manager'),
+                        $remaining,
+                        $items_text,
+                        $rule['name'],
+                        $discount_value
+                    );
+                } else {
+                    $message = sprintf(
+                        __('Add %d more item(s) to get <strong>%s</strong> - <em>%s discount!</em>', 'wc-cart-manager'),
+                        $remaining,
+                        $rule['name'],
+                        $discount_value
+                    );
+                }
+                break;
+
+            case 'fee_label':
+                $message = sprintf(
+                    '%s - %s Discount',
+                    $rule['name'],
+                    $discount_value
+                );
+                break;
         }
 
-        return (object) array(
-            'id' => uniqid('quantity_discount_'),
-            'name' => implode(' ', $label_parts) . ' Discount',
-            'amount' => -$amount,
-            'tax_class' => '',
-            'taxable' => false,
-            'tax_data' => array(),
-            'tax' => 0,
-            'total' => -$amount
-        );
+        return apply_filters('wc_cart_manager_rule_message', $message, $rule, $context, $additional_data);
+    }
+
+    /**
+     * Get cart total threshold message
+     */
+    private function get_cart_total_message($trigger_data, $cart_total, $rule)
+    {
+        if ($cart_total >= $trigger_data['value']) {
+            return $this->format_rule_message($rule, 'applied');
+        }
+
+        $remaining = $trigger_data['value'] - $cart_total;
+        return $this->format_rule_message($rule, 'threshold', array('remaining' => $remaining));
     }
 
     /**
      * Get item quantity threshold message
-     * 
-     * @param array $trigger_data Trigger data
-     * @param array $applicable_data Applicable items data
-     * @param string $discount_label Discount label
-     * @return string|bool Message or false if no message
      */
-    private function get_item_quantity_message($trigger_data, $applicable_data, $discount_label)
+    private function get_item_quantity_message($trigger_data, $applicable_data, $rule)
     {
         $has_specific_items = !empty($trigger_data['products']) || !empty($trigger_data['categories']);
 
@@ -340,19 +409,38 @@ class Cart_Manager_Frontend
         }
 
         if ($this->is_item_quantity_condition_met($trigger_data, $applicable_data)) {
-            return sprintf(
-                __('%s discount has been applied%s', 'wc-cart-manager'),
-                $discount_label,
-                $has_specific_items ? ' to selected items' : ''
-            );
+            return $this->format_rule_message($rule, 'applied');
         }
 
         $remaining = $trigger_data['value'] - $applicable_data['total_quantity'];
-        return sprintf(
-            __('Add %d more %sitem(s) to get %s discount!', 'wc-cart-manager'),
-            $remaining,
-            $has_specific_items ? 'qualifying ' : '',
-            $discount_label
+        return $this->format_rule_message($rule, 'item_quantity_threshold', array(
+            'remaining' => $remaining,
+            'has_specific_items' => $has_specific_items,
+            'items' => $applicable_data['items']
+        ));
+    }
+
+    /**
+     * Create discount fee object
+     */
+    private function create_discount_fee($amount, $is_selected_items = false, $rule = array())
+    {
+        $label = $this->format_rule_message($rule, 'fee_label');
+        if ($is_selected_items) {
+            $label .= ' (Selected Items)';
+        }
+
+        $label = apply_filters('wc_cart_manager_discount_fee_label', $label, $rule, $amount);
+
+        return (object) array(
+            'id' => uniqid('quantity_discount_'),
+            'name' => $label,
+            'amount' => -$amount,
+            'tax_class' => '',
+            'taxable' => false,
+            'tax_data' => array(),
+            'tax' => 0,
+            'total' => -$amount
         );
     }
 
@@ -391,9 +479,9 @@ class Cart_Manager_Frontend
                     // Create and add fee
                     $has_specific_items = !empty($trigger_data['products']) || !empty($trigger_data['categories']);
                     $fee = $this->create_discount_fee(
-                        $discount_data['label'],
                         $discount_amount,
-                        $has_specific_items
+                        $has_specific_items,
+                        $rule
                     );
 
                     $cart->fees_api()->add_fee($fee);
@@ -453,27 +541,13 @@ class Cart_Manager_Frontend
             // Process messages based on trigger type
             if ($trigger_data['type'] === 'cart_total') {
                 $cart_total = $cart->get_cart_contents_total();
-                if ($cart_total >= $trigger_data['value']) {
-                    $messages[] = sprintf(
-                        __('%s discount has been applied', 'wc-cart-manager'),
-                        $discount_data['label']
-                    );
-                } else {
-                    $remaining = $trigger_data['value'] - $cart_total;
-                    $messages[] = sprintf(
-                        __('Spend %s more to get %s discount!', 'wc-cart-manager'),
-                        wc_price($remaining),
-                        $discount_data['label']
-                    );
+                $message = $this->get_cart_total_message($trigger_data, $cart_total, $rule);
+                if ($message) {
+                    $messages[] = $message;
                 }
             } elseif ($trigger_data['type'] === 'item_quantity') {
                 $applicable_data = $this->get_applicable_items($cart, $rule);
-                $message = $this->get_item_quantity_message(
-                    $trigger_data,
-                    $applicable_data,
-                    $discount_data['label']
-                );
-
+                $message = $this->get_item_quantity_message($trigger_data, $applicable_data, $rule);
                 if ($message) {
                     $messages[] = $message;
                 }
@@ -481,6 +555,7 @@ class Cart_Manager_Frontend
         }
 
         if (!empty($messages)) {
+            $messages = apply_filters('wc_cart_manager_discount_messages', $messages);
             echo '<div class="wc-cart-manager-messages">';
             foreach ($messages as $message) {
                 echo '<div class="wc-cart-manager-message">' . wp_kses_post($message) . '</div>';
@@ -503,38 +578,29 @@ class Cart_Manager_Frontend
                 continue;
             }
 
-            $trigger_value = floatval($rule['trigger']['value']);
-            $discount_type = $rule['discount']['type'];
-            $discount_value = floatval($rule['discount']['value']);
+            $trigger_data = $this->get_trigger_type_data($rule);
+            $discount_data = $this->get_discount_data($rule);
+
+            if (!$trigger_data || !$discount_data) {
+                continue;
+            }
 
             // Check if cart total meets the requirement
-            if ($cart_total >= $trigger_value) {
+            if ($cart_total >= $trigger_data['value']) {
                 $discount_amount = 0;
 
                 // Calculate discount
-                if ($discount_type === 'percentage') {
-                    $discount_amount = round(($cart_total * $discount_value / 100), 2);
+                if ($discount_data['type'] === 'percentage') {
+                    $discount_amount = round(($cart_total * $discount_data['value'] / 100), 2);
                 } else {
-                    $discount_amount = min($discount_value, $cart_total);
+                    $discount_amount = min($discount_data['value'], $cart_total);
                 }
 
                 if ($discount_amount > 0) {
-                    // Create label
-                    $label = ($discount_type === 'percentage' ? $discount_value . '%' : wc_price($discount_value)) . ' Discount';
-
                     // Add fee
-                    $fee = (object) array(
-                        'id' => uniqid('cart_total_discount_'),
-                        'name' => $label,
-                        'amount' => -$discount_amount,
-                        'tax_class' => '',
-                        'taxable' => false,
-                        'tax_data' => array(),
-                        'tax' => 0,
-                        'total' => -$discount_amount
-                    );
-
+                    $fee = $this->create_discount_fee($discount_amount, false, $rule);
                     $cart->fees_api()->add_fee($fee);
+
                     $applied_discounts[] = array(
                         'rule' => $rule,
                         'amount' => $discount_amount

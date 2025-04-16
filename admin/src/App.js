@@ -5,6 +5,7 @@ import {
   CardBody,
   Button,
   Modal,
+  TabPanel,
 } from "@wordpress/components";
 import DiscountRuleForm from "./components/DiscountRuleForm";
 import RulesTable from "./components/RulesTable";
@@ -168,6 +169,42 @@ function App() {
     }
   };
 
+  const tabs = [
+    {
+      name: "discount-rules",
+      title: __("Discount Rules", "wc-cart-manager"),
+      content: (
+        <div className="rules-section">
+          <h3>{__("Active Discount Rules", "wc-cart-manager")}</h3>
+          <RulesTable
+            rules={rules}
+            isLoading={isLoading}
+            onDeleteRule={handleDeleteRule}
+            onUpdateRule={handleUpdateRule}
+            onEditClick={() => setIsCreatingRule(true)}
+          />
+        </div>
+      ),
+    },
+    {
+      name: "upsell-rules",
+      title: __("Upsell Rules", "wc-cart-manager"),
+      content: (
+        <div className="upsell-section">
+          <div className="upsell-pro-message">
+            {/* <h3>{__("Upsell Rules", "wc-cart-manager")}</h3> */}
+            <p>
+              {__(
+                "Upsell Rules will be available in PRO version.",
+                "wc-cart-manager"
+              )}
+            </p>
+          </div>
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div className="wc-cart-manager-admin-app">
       <Card>
@@ -182,16 +219,13 @@ function App() {
           </Button>
         </CardHeader>
         <CardBody>
-          <div className="rules-section">
-            <h3>{__("Active Discount Rules", "wc-cart-manager")}</h3>
-            <RulesTable
-              rules={rules}
-              isLoading={isLoading}
-              onDeleteRule={handleDeleteRule}
-              onUpdateRule={handleUpdateRule}
-              onEditClick={() => setIsCreatingRule(true)}
-            />
-          </div>
+          <TabPanel
+            className="wc-cart-manager-tabs"
+            activeClass="active-tab"
+            tabs={tabs}
+          >
+            {(tab) => tab.content}
+          </TabPanel>
         </CardBody>
       </Card>
 
