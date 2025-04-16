@@ -7,6 +7,76 @@
   margin: 0;
   font-size: 1.5em;
   color: #1e1e1e;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.create-rule-button {
+  margin-left: 16px;
+}
+
+.rules-section {
+  margin-top: 20px;
+}
+
+.rules-section h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #23282d;
+  font-size: 1.2em;
+}
+
+/* Modal Styles */
+.create-rule-modal {
+  max-width: 800px !important;
+  width: 90% !important;
+  margin: 20px auto !important;
+  position: relative !important;
+  transform: none !important;
+  top: 0 !important;
+  left: 0 !important;
+  background: #fff !important;
+}
+
+.create-rule-modal-overlay {
+  background: rgba(0, 0, 0, 0.7) !important;
+  padding: 32px 0 !important;
+  overflow-y: auto !important;
+}
+
+/* Responsive Design */
+@media screen and (max-width: 782px) {
+  .wc-cart-manager-admin-app {
+    padding: 16px;
+  }
+
+  .wc-cart-manager-admin-app h2 {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .create-rule-button {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .create-rule-modal {
+    width: 95% !important;
+    margin: 10px auto !important;
+  }
+
+  .create-rule-modal-overlay {
+    padding: 10px 0 !important;
+  }
+}
+
+/* Tablet Responsive */
+@media screen and (min-width: 783px) and (max-width: 1024px) {
+  .create-rule-modal {
+    width: 80% !important;
+  }
 }
 
 .discount-rule-section {

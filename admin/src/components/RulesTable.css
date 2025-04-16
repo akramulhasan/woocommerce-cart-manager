@@ -37,6 +37,16 @@
   border-radius: 4px;
 }
 
+.rules-table-empty p {
+  margin-bottom: 20px;
+  color: #666;
+  font-size: 16px;
+}
+
+.create-rule-empty-button {
+  margin-top: 16px;
+}
+
 .rules-table td button {
   margin: 0;
 }
@@ -205,6 +215,14 @@
 
   .components-modal__header {
     padding: 12px 16px !important;
+  }
+
+  .rules-table-empty {
+    padding: 24px;
+  }
+
+  .create-rule-empty-button {
+    width: 100%;
   }
 }
 

@@ -3,9 +3,8 @@ import {
   Card,
   CardHeader,
   CardBody,
-  TabPanel,
   Button,
-  TextControl,
+  Modal,
 } from "@wordpress/components";
 import DiscountRuleForm from "./components/DiscountRuleForm";
 import RulesTable from "./components/RulesTable";
@@ -15,6 +14,7 @@ import "./App.css";
 function App() {
   const [rules, setRules] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isCreatingRule, setIsCreatingRule] = useState(false);
 
   useEffect(() => {
     fetchRules();
@@ -52,19 +52,15 @@ function App() {
 
   const handleSaveRule = async (ruleData) => {
     try {
-      // Log the nonce for debugging (temporary)
-      console.log("Using nonce:", wcCartManagerAdmin.apiNonce);
-
       const response = await fetch(`${wcCartManagerAdmin.apiUrl}/rules`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "X-WP-Nonce": wcCartManagerAdmin.apiNonce,
-          // Add REST API specific headers
           Accept: "application/json",
           "X-Requested-With": "XMLHttpRequest",
         },
-        credentials: "same-origin", // Important for cookies/nonce
+        credentials: "same-origin",
         body: JSON.stringify(ruleData),
       });
 
@@ -74,7 +70,6 @@ function App() {
         console.error("Server error status:", response.status);
         console.error("Server error details:", data);
 
-        // Handle specific error cases
         if (response.status === 401 || response.status === 403) {
           return {
             error: __(
@@ -92,6 +87,7 @@ function App() {
       }
 
       await fetchRules(); // Refresh the rules list
+      setIsCreatingRule(false); // Close the modal
       return data;
     } catch (error) {
       console.error("Error saving rule:", error);
@@ -172,69 +168,48 @@ function App() {
     }
   };
 
-  const tabs = [
-    {
-      name: "create-rule",
-      title: __("Create Rule", "wc-cart-manager"),
-      content: (
-        <div className="discount-rule-section">
-          <h3>{__("Create New Discount Rule", "wc-cart-manager")}</h3>
-          <DiscountRuleForm
-            onSave={handleSaveRule}
-            submitLabel={__("Create Rule", "wc-cart-manager")}
-            existingRules={rules}
-          />
-        </div>
-      ),
-    },
-    {
-      name: "rules-list",
-      title: __("Active Rules", "wc-cart-manager"),
-      content: (
-        <div className="discount-rule-section">
-          <h3>{__("Active Discount Rules", "wc-cart-manager")}</h3>
-          <RulesTable
-            rules={rules}
-            isLoading={isLoading}
-            onDeleteRule={handleDeleteRule}
-            onUpdateRule={handleUpdateRule}
-          />
-        </div>
-      ),
-    },
-    {
-      name: "upsells",
-      title: __("Upsell Rules", "wc-cart-manager"),
-      content: (
-        <div className="discount-rule-section">
-          <h3>{__("Upsell Rules Configuration", "wc-cart-manager")}</h3>
-          <p>
-            {__(
-              "Upsell configuration will be available in the next update.",
-              "wc-cart-manager"
-            )}
-          </p>
-        </div>
-      ),
-    },
-  ];
-
   return (
     <div className="wc-cart-manager-admin-app">
       <Card>
         <CardHeader>
           <h2>{__("WooCommerce Cart Manager", "wc-cart-manager")}</h2>
+          <Button
+            variant="primary"
+            onClick={() => setIsCreatingRule(true)}
+            className="create-rule-button"
+          >
+            {__("Create New Rule", "wc-cart-manager")}
+          </Button>
         </CardHeader>
         <CardBody>
-          <TabPanel
-            className="wc-cart-manager-tabs"
-            activeClass="active-tab"
-            tabs={tabs}
-          >
-            {(tab) => tab.content}
-          </TabPanel>
+          <div className="rules-section">
+            <h3>{__("Active Discount Rules", "wc-cart-manager")}</h3>
+            <RulesTable
+              rules={rules}
+              isLoading={isLoading}
+              onDeleteRule={handleDeleteRule}
+              onUpdateRule={handleUpdateRule}
+              onEditClick={() => setIsCreatingRule(true)}
+            />
+          </div>
         </CardBody>
       </Card>
+
+      {isCreatingRule && (
+        <Modal
+          title={__("Create New Discount Rule", "wc-cart-manager")}
+          onRequestClose={() => setIsCreatingRule(false)}
+          className="create-rule-modal"
+          overlayClassName="create-rule-modal-overlay"
+        >
+          <DiscountRuleForm
+            onSave={handleSaveRule}
+            onCancel={() => setIsCreatingRule(false)}
+            submitLabel={__("Create Rule", "wc-cart-manager")}
+            existingRules={rules}
+          />
+        </Modal>
+      )}
     </div>
   );
 }

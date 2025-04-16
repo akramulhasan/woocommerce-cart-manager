@@ -11,7 +11,13 @@ import { useState } from "@wordpress/element";
 import DiscountRuleForm from "./DiscountRuleForm";
 import "./RulesTable.css";
 
-function RulesTable({ rules, isLoading, onDeleteRule, onUpdateRule }) {
+function RulesTable({
+  rules,
+  isLoading,
+  onDeleteRule,
+  onUpdateRule,
+  onEditClick,
+}) {
   const [editingRule, setEditingRule] = useState(null);
 
   if (isLoading) {
@@ -26,6 +32,13 @@ function RulesTable({ rules, isLoading, onDeleteRule, onUpdateRule }) {
     return (
       <div className="rules-table-empty">
         <p>{__("No discount rules found.", "wc-cart-manager")}</p>
+        <Button
+          variant="primary"
+          onClick={onEditClick}
+          className="create-rule-empty-button"
+        >
+          {__("Create Your First Rule", "wc-cart-manager")}
+        </Button>
       </div>
     );
   }
