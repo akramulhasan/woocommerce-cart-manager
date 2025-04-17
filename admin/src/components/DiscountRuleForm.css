@@ -11,6 +11,10 @@
   margin-bottom: 24px;
 }
 
+.discount-type-section {
+  margin-bottom: 24px;
+}
+
 .discount-rule-form .components-text-control__input,
 .discount-rule-form .components-select-control__input {
   width: 100%;
