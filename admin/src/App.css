@@ -163,6 +163,16 @@
   border: 1px solid #ddd;
   border-radius: 4px;
   background-color: #f8f8f8;
+  width: 100%;
+}
+
+/* Cart Block specific styles */
+.wp-block-woocommerce-cart .wc-cart-manager-messages {
+  margin: 0 0 20px 0;
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: #f8f8f8;
 }
 
 .wc-cart-manager-message {
@@ -179,4 +189,11 @@
 .discount-applied {
   color: #28a745;
   font-weight: 500;
+}
+
+/* Ensure messages are visible in both contexts */
+.wp-block-woocommerce-cart .wc-cart-manager-messages,
+.woocommerce-cart-form ~ .wc-cart-manager-messages {
+  display: block !important;
+  visibility: visible !important;
 }
