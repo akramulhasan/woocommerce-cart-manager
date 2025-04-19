@@ -55,6 +55,16 @@ register_activation_hook(WC_CART_MANAGER_FILE, array('Cart_Manager_Activator', '
 // Hook to initialize the plugin.
 add_action('plugins_loaded', 'wcm_initialize_plugin');
 
+// Add plugin action links
+add_filter('plugin_action_links_' . plugin_basename(WC_CART_MANAGER_FILE), 'wcm_add_action_links');
+
+function wcm_add_action_links($links)
+{
+    $settings_link = '<a href="' . admin_url('admin.php?page=wc-cart-manager') . '">' . __('Settings', 'wc-cart-manager') . '</a>';
+    array_unshift($links, $settings_link);
+    return $links;
+}
+
 function wcm_initialize_plugin()
 {
     if (!class_exists('WooCommerce')) {
