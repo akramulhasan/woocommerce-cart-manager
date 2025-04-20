@@ -68,13 +68,27 @@ function RulesTable({
         throw new Error(errorData.message || "Failed to update rule status");
       }
 
-      // Call onUpdateRule with just the status update
-      await onUpdateRule({
-        id: ruleId,
-        status: enabled ? "enabled" : "disabled",
-      });
+      const updatedRule = await response.json();
+
+      // Update the local state immediately
+      const updatedRules = rules.map((rule) =>
+        rule.id === ruleId ? { ...rule, status: updatedRule.status } : rule
+      );
+
+      // Call onUpdateRule with the updated rule
+      await onUpdateRule(updatedRule);
     } catch (error) {
       console.error("Error updating rule status:", error);
+      // Revert the toggle state if the update failed
+      const updatedRules = rules.map((rule) =>
+        rule.id === ruleId
+          ? {
+              ...rule,
+              status: rule.status === "enabled" ? "disabled" : "enabled",
+            }
+          : rule
+      );
+      await onUpdateRule(updatedRules.find((rule) => rule.id === ruleId));
     }
   };
 
