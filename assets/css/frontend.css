@@ -1,0 +1,67 @@
+.wc-cart-manager-messages {
+  margin: 20px 0;
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: #f8f8f8;
+  width: 100%;
+  clear: both;
+}
+
+.wc-cart-manager-message {
+  color: #333;
+  font-size: 14px;
+  line-height: 1.4;
+  margin-bottom: 10px;
+}
+
+.wc-cart-manager-message:last-child {
+  margin-bottom: 0;
+}
+
+/* Above cart */
+.woocommerce-cart .woocommerce-before-cart .wc-cart-manager-messages {
+  margin-bottom: 30px;
+}
+
+/* Above totals */
+.woocommerce-cart
+  .woocommerce-before-cart-collaterals
+  .wc-cart-manager-messages {
+  margin-bottom: 20px;
+  float: left;
+  width: 100%;
+}
+
+/* Below totals */
+.woocommerce-cart .woocommerce-after-cart-totals .wc-cart-manager-messages {
+  margin-top: 20px;
+  float: left;
+  width: 100%;
+}
+
+/* Inside totals */
+.woocommerce-cart .woocommerce-cart-totals .wc-cart-manager-messages {
+  margin: 15px 0;
+  padding: 10px;
+}
+
+/* Block cart styles */
+.wc-block-cart .wc-cart-manager-messages {
+  margin: 20px 0;
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: #f8f8f8;
+  width: 100%;
+}
+
+/* Responsive styles */
+@media screen and (max-width: 782px) {
+  .woocommerce-cart
+    .woocommerce-before-cart-collaterals
+    .wc-cart-manager-messages,
+  .woocommerce-cart .woocommerce-after-cart-totals .wc-cart-manager-messages {
+    width: 100%;
+  }
+}

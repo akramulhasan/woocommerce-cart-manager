@@ -73,6 +73,59 @@ class Cart_Manager_API
             'callback'            => array($this, 'get_categories'),
             'permission_callback' => array($this, 'check_admin_permission'),
         ));
+
+        // Settings endpoints
+        register_rest_route($namespace, '/settings', array(
+            array(
+                'methods'             => WP_REST_Server::READABLE,
+                'callback'            => array($this, 'get_settings'),
+                'permission_callback' => array($this, 'check_admin_permission'),
+            ),
+            array(
+                'methods'             => WP_REST_Server::CREATABLE,
+                'callback'            => array($this, 'update_settings'),
+                'permission_callback' => array($this, 'check_admin_permission'),
+                'args'                => array(
+                    'message_position' => array(
+                        'type'              => 'string',
+                        'required'          => true,
+                        'enum'              => array('above_cart', 'below_cart', 'above_totals', 'below_totals', 'inside_totals', 'floating'),
+                        'sanitize_callback' => 'sanitize_text_field',
+                    ),
+                    'colors' => array(
+                        'type'       => 'object',
+                        'required'   => true,
+                        'properties' => array(
+                            'background' => array(
+                                'type'              => 'string',
+                                'required'          => true,
+                                'sanitize_callback' => 'sanitize_hex_color',
+                            ),
+                            'text' => array(
+                                'type'              => 'string',
+                                'required'          => true,
+                                'sanitize_callback' => 'sanitize_hex_color',
+                            ),
+                            'border' => array(
+                                'type'              => 'string',
+                                'required'          => true,
+                                'sanitize_callback' => 'sanitize_hex_color',
+                            ),
+                            'success' => array(
+                                'type'              => 'string',
+                                'required'          => true,
+                                'sanitize_callback' => 'sanitize_hex_color',
+                            ),
+                            'threshold' => array(
+                                'type'              => 'string',
+                                'required'          => true,
+                                'sanitize_callback' => 'sanitize_hex_color',
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ));
     }
 
     /**
@@ -633,6 +686,51 @@ class Cart_Manager_API
         }
 
         return $sanitized;
+    }
+
+    /**
+     * Get plugin settings
+     *
+     * @since 1.0.0
+     * @return WP_REST_Response
+     */
+    public function get_settings()
+    {
+        $default_settings = array(
+            'message_position' => 'above_cart',
+            'colors' => array(
+                'background' => '#f8f8f8',
+                'text' => '#333333',
+                'border' => '#dddddd',
+                'success' => '#28a745',
+                'threshold' => '#ffc107',
+            ),
+        );
+
+        $settings = get_option('wc_cart_manager_settings', $default_settings);
+        return rest_ensure_response($settings);
+    }
+
+    /**
+     * Update plugin settings
+     *
+     * @since 1.0.0
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response|WP_Error
+     */
+    public function update_settings($request)
+    {
+        $settings = $request->get_params();
+
+        if (!update_option('wc_cart_manager_settings', $settings)) {
+            return new WP_Error(
+                'settings_not_updated',
+                esc_html__('Failed to update settings.', 'wc-cart-manager'),
+                array('status' => 500)
+            );
+        }
+
+        return rest_ensure_response($settings);
     }
 }
 

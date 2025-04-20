@@ -9,6 +9,7 @@ import {
 } from "@wordpress/components";
 import DiscountRuleForm from "./components/DiscountRuleForm";
 import RulesTable from "./components/RulesTable";
+import SettingsPanel from "./components/SettingsPanel";
 import { useState, useEffect } from "@wordpress/element";
 import "./App.css";
 
@@ -98,29 +99,32 @@ function App() {
     }
   };
 
+  const handleDeleteRule = async (ruleId) => {
+    try {
+      const response = await fetch(
+        `${wcCartManagerAdmin.apiUrl}/rules/${ruleId}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            "X-WP-Nonce": wcCartManagerAdmin.apiNonce,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to delete rule");
+      }
+
+      await fetchRules(); // Refresh the rules list
+    } catch (error) {
+      console.error("Error deleting rule:", error);
+    }
+  };
+
   const handleUpdateRule = async (updatedRule) => {
     try {
-      // For status updates (when only status is being changed)
-      if (
-        updatedRule &&
-        updatedRule.id &&
-        updatedRule.status &&
-        Object.keys(updatedRule).length === 2
-      ) {
-        await fetchRules();
-        return true;
-      }
-
-      // For full rule updates
-      if (!updatedRule || !updatedRule.id) {
-        throw new Error("Invalid rule data");
-      }
-
-      // If no changes were made, just return success
-      if (updatedRule === null) {
-        return true;
-      }
-
       const response = await fetch(
         `${wcCartManagerAdmin.apiUrl}/rules/${updatedRule.id}`,
         {
@@ -138,34 +142,13 @@ function App() {
         throw new Error(errorData.message || "Failed to update rule");
       }
 
-      const result = await response.json();
-      await fetchRules();
-      return result;
+      await fetchRules(); // Refresh the rules list
+      return await response.json();
     } catch (error) {
       console.error("Error updating rule:", error);
       return {
         error: __("Error updating rule. Please try again.", "wc-cart-manager"),
       };
-    }
-  };
-
-  const handleDeleteRule = async (ruleId) => {
-    try {
-      const response = await fetch(
-        `${wcCartManagerAdmin.apiUrl}/rules/${ruleId}`,
-        {
-          method: "DELETE",
-          headers: {
-            "X-WP-Nonce": wcCartManagerAdmin.apiNonce,
-          },
-        }
-      );
-
-      if (response.ok) {
-        fetchRules(); // Refresh the rules list
-      }
-    } catch (error) {
-      console.error("Error deleting rule:", error);
     }
   };
 
@@ -192,7 +175,6 @@ function App() {
       content: (
         <div className="upsell-section">
           <div className="upsell-pro-message">
-            {/* <h3>{__("Upsell Rules", "wc-cart-manager")}</h3> */}
             <p>
               {__(
                 "Upsell Rules will be available in PRO version.",
@@ -202,6 +184,11 @@ function App() {
           </div>
         </div>
       ),
+    },
+    {
+      name: "settings",
+      title: __("Settings", "wc-cart-manager"),
+      content: <SettingsPanel />,
     },
   ];
 

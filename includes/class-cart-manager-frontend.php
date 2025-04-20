@@ -31,6 +31,13 @@ class Cart_Manager_Frontend
     private static $debug_shown = false;
 
     /**
+     * Track if messages have been displayed
+     *
+     * @var bool
+     */
+    private static $messages_displayed = false;
+
+    /**
      * Store current discounts
      *
      * @var array
@@ -67,6 +74,39 @@ class Cart_Manager_Frontend
         // Hook into cart update events
         add_action('woocommerce_before_calculate_totals', array($this, 'reset_discount_state'), 10);
         add_action('woocommerce_cart_calculate_fees', array($this, 'apply_cart_discounts'), 20);
+
+        // Add message display hooks based on settings
+        $settings = get_option('wc_cart_manager_settings', array(
+            'message_position' => 'above_cart',
+            'colors' => array(
+                'background' => '#f8f8f8',
+                'text' => '#333333',
+                'border' => '#dddddd',
+                'success' => '#28a745',
+                'threshold' => '#ffc107',
+            ),
+        ));
+
+        $position = isset($settings['message_position']) ? $settings['message_position'] : 'above_cart';
+
+        // Add our hooks with appropriate priorities to work alongside other plugins
+        switch ($position) {
+            case 'above_cart':
+                add_action('woocommerce_before_cart', array($this, 'display_discount_messages'), 5);
+                break;
+            case 'above_totals':
+                add_action('woocommerce_before_cart_collaterals', array($this, 'display_discount_messages'), 5);
+                break;
+            case 'below_totals':
+                add_action('woocommerce_after_cart_totals', array($this, 'display_discount_messages'), 15);
+                break;
+            case 'inside_totals':
+                add_action('woocommerce_cart_totals_before_order_total', array($this, 'display_discount_messages'), 5);
+                break;
+        }
+
+        // Add block cart support
+        add_action('woocommerce_blocks_cart_enqueue_data', array($this, 'enqueue_block_cart_scripts'));
     }
 
     /**
@@ -509,12 +549,27 @@ class Cart_Manager_Frontend
      */
     public function display_discount_messages()
     {
+        // Prevent duplicate message display
+        if (self::$messages_displayed) {
+            return;
+        }
+
         if (!WC()->cart) {
             return;
         }
 
         $cart = WC()->cart;
         $rules = get_option('wc_cart_manager_rules', array());
+        $settings = get_option('wc_cart_manager_settings', array(
+            'message_position' => 'above_cart',
+            'colors' => array(
+                'background' => '#f8f8f8',
+                'text' => '#333333',
+                'border' => '#dddddd',
+                'success' => '#28a745',
+                'threshold' => '#ffc107',
+            ),
+        ));
         $messages = array();
 
         if (!is_array($rules)) {
@@ -543,24 +598,53 @@ class Cart_Manager_Frontend
                 $cart_total = $cart->get_cart_contents_total();
                 $message = $this->get_cart_total_message($trigger_data, $cart_total, $rule);
                 if ($message) {
-                    $messages[] = $message;
+                    $messages[] = array(
+                        'message' => $message,
+                        'type' => $cart_total >= $trigger_data['value'] ? 'success' : 'threshold',
+                    );
                 }
             } elseif ($trigger_data['type'] === 'item_quantity') {
                 $applicable_data = $this->get_applicable_items($cart, $rule);
                 $message = $this->get_item_quantity_message($trigger_data, $applicable_data, $rule);
                 if ($message) {
-                    $messages[] = $message;
+                    $messages[] = array(
+                        'message' => $message,
+                        'type' => $this->is_item_quantity_condition_met($trigger_data, $applicable_data) ? 'success' : 'threshold',
+                    );
                 }
             }
         }
 
         if (!empty($messages)) {
             $messages = apply_filters('wc_cart_manager_discount_messages', $messages);
-            echo '<div class="wc-cart-manager-messages">';
-            foreach ($messages as $message) {
-                echo '<div class="wc-cart-manager-message">' . wp_kses_post($message) . '</div>';
+            $position = isset($settings['message_position']) ? $settings['message_position'] : 'above_cart';
+            $colors = isset($settings['colors']) ? $settings['colors'] : array(
+                'background' => '#f8f8f8',
+                'text' => '#333333',
+                'border' => '#dddddd',
+                'success' => '#28a745',
+                'threshold' => '#ffc107',
+            );
+
+            $style = sprintf(
+                'background-color: %s; color: %s; border-color: %s; margin: 1em 0; padding: 1em; border: 1px solid; border-radius: 4px;',
+                esc_attr($colors['background']),
+                esc_attr($colors['text']),
+                esc_attr($colors['border'])
+            );
+
+            echo '<div class="wc-cart-manager-messages" style="' . $style . '">';
+            foreach ($messages as $message_data) {
+                $message_style = sprintf(
+                    'color: %s; margin-bottom: 0.5em;',
+                    esc_attr($colors[$message_data['type']])
+                );
+                echo '<div class="wc-cart-manager-message" style="' . $message_style . '">' . wp_kses_post($message_data['message']) . '</div>';
             }
             echo '</div>';
+
+            // Mark messages as displayed
+            self::$messages_displayed = true;
         }
     }
 
@@ -719,6 +803,25 @@ class Cart_Manager_Frontend
                 }
             }
         }
+    }
+
+    /**
+     * Enqueue block cart scripts
+     */
+    public function enqueue_block_cart_scripts()
+    {
+        wp_enqueue_script(
+            'wc-cart-manager-block-cart',
+            plugin_dir_url(WC_CART_MANAGER_FILE) . 'assets/js/block-cart.js',
+            array('wp-element', 'wp-components', 'wp-i18n'),
+            WC_CART_MANAGER_VERSION,
+            true
+        );
+
+        wp_localize_script('wc-cart-manager-block-cart', 'wcCartManagerBlock', array(
+            'ajax_url' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('wc_cart_manager_nonce')
+        ));
     }
 }
 
