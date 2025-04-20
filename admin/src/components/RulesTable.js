@@ -49,6 +49,13 @@ function RulesTable({
 
   const handleStatusChange = async (ruleId, enabled) => {
     try {
+      // Update the UI with the new status
+      const updatedRule = {
+        ...rules.find((rule) => rule.id === ruleId),
+        status: enabled ? "enabled" : "disabled",
+      };
+
+      // Send the update to the server
       const response = await fetch(
         `${wcCartManagerAdmin.apiUrl}/rules/${ruleId}`,
         {
@@ -68,27 +75,18 @@ function RulesTable({
         throw new Error(errorData.message || "Failed to update rule status");
       }
 
-      const updatedRule = await response.json();
-
-      // Update the local state immediately
-      const updatedRules = rules.map((rule) =>
-        rule.id === ruleId ? { ...rule, status: updatedRule.status } : rule
-      );
-
-      // Call onUpdateRule with the updated rule
+      // Update the parent component with the new rule status
       await onUpdateRule(updatedRule);
     } catch (error) {
       console.error("Error updating rule status:", error);
-      // Revert the toggle state if the update failed
-      const updatedRules = rules.map((rule) =>
-        rule.id === ruleId
-          ? {
-              ...rule,
-              status: rule.status === "enabled" ? "disabled" : "enabled",
-            }
-          : rule
-      );
-      await onUpdateRule(updatedRules.find((rule) => rule.id === ruleId));
+      // Revert the status change
+      const originalRule = rules.find((rule) => rule.id === ruleId);
+      if (originalRule) {
+        await onUpdateRule({
+          ...originalRule,
+          status: originalRule.status === "enabled" ? "disabled" : "enabled",
+        });
+      }
     }
   };
 

@@ -142,7 +142,12 @@ function App() {
         throw new Error(errorData.message || "Failed to update rule");
       }
 
-      await fetchRules(); // Refresh the rules list
+      setRules((prevRules) =>
+        prevRules.map((rule) =>
+          rule.id === updatedRule.id ? updatedRule : rule
+        )
+      );
+
       return await response.json();
     } catch (error) {
       console.error("Error updating rule:", error);
