@@ -627,7 +627,7 @@ class Cart_Manager_Frontend
             );
 
             $style = sprintf(
-                'background-color: %s; color: %s; border-color: %s; margin: 1em 0; padding: 1em; border: 1px solid; border-radius: 4px;',
+                'background-color: %s; color: %s; border: 1px solid %s; margin: 1em 0; padding: 1em; border-radius: 4px;',
                 esc_attr($colors['background']),
                 esc_attr($colors['text']),
                 esc_attr($colors['border'])
