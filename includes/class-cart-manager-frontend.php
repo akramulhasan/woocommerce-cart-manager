@@ -352,10 +352,7 @@ class Cart_Manager_Frontend
 
         switch ($context) {
             case 'applied':
-                $message = sprintf(
-                    __('%s has been applied!', 'wc-cart-manager'),
-                    $rule['message']
-                );
+                $message = $rule['message'];
                 break;
 
             case 'threshold':

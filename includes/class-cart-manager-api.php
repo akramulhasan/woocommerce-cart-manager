@@ -373,27 +373,76 @@ class Cart_Manager_API
      */
     public function create_rule($request)
     {
-        $rules = get_option('wc_cart_manager_rules', array());
-        $new_rule = $this->sanitize_rule($request->get_params());
+        try {
+            $rule_data = $request->get_json_params();
 
-        // Validate the new rule
-        $validation_result = $this->validate_rule($new_rule, $rules);
-        if (is_wp_error($validation_result)) {
-            return $validation_result;
-        }
+            // Validate required fields
+            if (empty($rule_data['name']) || trim($rule_data['name']) === '') {
+                return new WP_Error(
+                    'missing_required_field',
+                    __('Rule name is required.', 'wc-cart-manager'),
+                    array('status' => 400)
+                );
+            }
 
-        $new_rule['id'] = time();
-        $rules[] = $new_rule;
+            if (empty($rule_data['message']) || trim($rule_data['message']) === '') {
+                return new WP_Error(
+                    'missing_required_field',
+                    __('Rule message is required.', 'wc-cart-manager'),
+                    array('status' => 400)
+                );
+            }
 
-        if (!update_option('wc_cart_manager_rules', $rules)) {
+            if (empty($rule_data['trigger']['value'])) {
+                return new WP_Error(
+                    'missing_required_field',
+                    __('Trigger value is required.', 'wc-cart-manager'),
+                    array('status' => 400)
+                );
+            }
+
+            if (empty($rule_data['discount']['value'])) {
+                return new WP_Error(
+                    'missing_required_field',
+                    __('Discount value is required.', 'wc-cart-manager'),
+                    array('status' => 400)
+                );
+            }
+
+            // Sanitize the data
+            $rule_data['name'] = sanitize_text_field($rule_data['name']);
+            $rule_data['message'] = sanitize_text_field($rule_data['message']);
+            $rule_data['trigger']['value'] = floatval($rule_data['trigger']['value']);
+            $rule_data['discount']['value'] = floatval($rule_data['discount']['value']);
+
+            $rules = get_option('wc_cart_manager_rules', array());
+            $new_rule = $this->sanitize_rule($rule_data);
+
+            // Validate the new rule
+            $validation_result = $this->validate_rule($new_rule, $rules);
+            if (is_wp_error($validation_result)) {
+                return $validation_result;
+            }
+
+            $new_rule['id'] = time();
+            $rules[] = $new_rule;
+
+            if (!update_option('wc_cart_manager_rules', $rules)) {
+                return new WP_Error(
+                    'rule_not_created',
+                    esc_html__('Failed to create rule.', 'wc-cart-manager'),
+                    array('status' => 500)
+                );
+            }
+
+            return rest_ensure_response($new_rule);
+        } catch (Exception $e) {
             return new WP_Error(
-                'rule_not_created',
-                esc_html__('Failed to create rule.', 'wc-cart-manager'),
+                'create_rule_error',
+                $e->getMessage(),
                 array('status' => 500)
             );
         }
-
-        return rest_ensure_response($new_rule);
     }
 
     /**
@@ -523,10 +572,9 @@ class Cart_Manager_API
 
             return rest_ensure_response($updated_rule);
         } catch (Exception $e) {
-            error_log('Cart Manager API Error: ' . $e->getMessage());
             return new WP_Error(
-                'update_error',
-                esc_html__('An error occurred while updating the rule.', 'wc-cart-manager'),
+                'update_rule_error',
+                $e->getMessage(),
                 array('status' => 500)
             );
         }

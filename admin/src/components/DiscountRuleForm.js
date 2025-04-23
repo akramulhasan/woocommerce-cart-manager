@@ -168,15 +168,37 @@ function DiscountRuleForm({
     setError("");
     setSuccess("");
 
-    // Validation
-    if (!formData.name || !formData.trigger.value || !formData.discount.value) {
-      setError(__("Please fill in all required fields.", "wc-cart-manager"));
+    // Enhanced validation
+    if (!formData.name || formData.name.trim() === "") {
+      setError(__("Please enter a rule name.", "wc-cart-manager"));
+      return;
+    }
+
+    if (!formData.message || formData.message.trim() === "") {
+      setError(
+        __(
+          "Please enter a message to display when the rule is applied.",
+          "wc-cart-manager"
+        )
+      );
+      return;
+    }
+
+    if (!formData.trigger.value || formData.trigger.value === "") {
+      setError(__("Please enter a valid trigger amount.", "wc-cart-manager"));
+      return;
+    }
+
+    if (!formData.discount.value || formData.discount.value === "") {
+      setError(__("Please enter a valid discount amount.", "wc-cart-manager"));
       return;
     }
 
     // Convert to numeric values
     const submissionData = {
       ...formData,
+      name: formData.name.trim(),
+      message: formData.message.trim(),
       trigger: {
         ...formData.trigger,
         value: parseFloat(formData.trigger.value),
@@ -406,7 +428,11 @@ function DiscountRuleForm({
         label={__("Message", "wc-cart-manager")}
         value={formData.message}
         onChange={(value) => handleInputChange("message", value)}
-        help={__("Custom message to display on cart page", "wc-cart-manager")}
+        help={__(
+          "Custom message to display on cart page when the rule is applied",
+          "wc-cart-manager"
+        )}
+        required
       />
 
       <div className="form-actions">

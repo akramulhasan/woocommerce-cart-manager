@@ -207,6 +207,10 @@ function App() {
             onClick={() => setIsCreatingRule(true)}
             className="create-rule-button"
           >
+            <span
+              className="dashicons dashicons-plus-alt2"
+              style={{ marginRight: "8px", verticalAlign: "middle" }}
+            ></span>
             {__("Create New Rule", "wc-cart-manager")}
           </Button>
         </CardHeader>
