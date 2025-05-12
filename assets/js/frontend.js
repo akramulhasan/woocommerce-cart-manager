@@ -13,6 +13,7 @@ jQuery(function ($) {
         },
         success: function (response) {
           if (response.success) {
+            
             // Update messages
             if (response.data.messages) {
               // Check if we're on a Cart Block page
@@ -53,9 +54,11 @@ jQuery(function ($) {
             }
 
             // Force cart totals update
-            if (typeof wc_cart_fragments_params !== "undefined") {
-              $(document.body).trigger("wc_fragment_refresh");
-            }
+            $( document.body ).trigger( 'updated_cart_totals' );
+            // $(document.body).trigger("wc_fragment_refresh");
+            // if (typeof wc_cart_fragments_params !== "undefined") {
+            //   $(document.body).trigger("wc_fragment_refresh");
+            // }
           }
         },
       });
@@ -98,7 +101,8 @@ jQuery(function ($) {
         success: function (response) {
           if (response.success) {
             // Update cart fragments
-            $(document.body).trigger("wc_fragment_refresh");
+            // $(document.body).trigger("wc_fragment_refresh");
+            $( document.body ).trigger( 'updated_cart_totals' );
             // Update cart messages
             updateCartMessages();
           }
@@ -112,17 +116,17 @@ jQuery(function ($) {
   );
 
   // Update after form submission
-  $(".woocommerce-cart-form, .wp-block-woocommerce-cart").on(
-    "submit",
-    function () {
-      setTimeout(updateCartMessages, 1000);
-    }
-  );
+  // $(".woocommerce-cart-form, .wp-block-woocommerce-cart").on(
+  //   "submit",
+  //   function () {
+  //     setTimeout(updateCartMessages, 1000);
+  //   }
+  // );
 
-  // Additional handler for cart fragments refresh
-  $(document.body).on("wc_fragments_refreshed", function () {
-    updateCartMessages();
-  });
+  // // Additional handler for cart fragments refresh
+  // $(document.body).on("wc_fragments_refreshed", function () {
+  //   updateCartMessages();
+  // });
 
   // Function to update cart message
   function updateCartMessage() {
